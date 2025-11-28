@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الگوریتم K-Means - نمایش بصری</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 الگوریتم K-Means</h1>
+            <p>نمایش بصری و تعاملی خوشه‌بندی داده‌ها</p>
+        </div>
+
+        <div class="content">
+            <div class="controls">
+                <div class="info-box">
+                    <p>برای افزودن نقطه روی بوم کلیک کنید یا از دکمه‌های زیر استفاده نمایید.</p>
+                </div>
+
+                <div class="control-group">
+                    <label>تعداد خوشه‌ها (K):</label>
+                    <input type="range" id="kValue" min="2" max="10" value="3" oninput="updateKValue(this.value)">
+                    <span class="range-value" id="kDisplay">3</span>
+                </div>
+
+                <div class="control-group">
+                    <label>تعداد نمونه‌های تصادفی:</label>
+                    <input type="number" id="sampleCount" min="10" max="500" value="150">
+                </div>
+
+                <div class="control-group">
+                    <label>الگوی پراکندگی:</label>
+                    <select id="distributionPattern">
+                        <option value="scattered">پراکنده در سراسر صفحه</option>
+                        <option value="gaussian">خوشه‌های گوسی</option>
+                        <option value="circular">دایره‌ای</option>
+                        <option value="grid">شبکه‌ای</option>
+                        <option value="random">کاملاً تصادفی</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>میزان پراکندگی:</label>
+                    <input type="range" id="spreadAmount" min="50" max="300" value="150" oninput="updateSpread(this.value)">
+                    <span class="range-value" id="spreadDisplay">150</span>
+                </div>
+
+                <div class="control-group">
+                    <label>سرعت انیمیشن (ms):</label>
+                    <input type="range" id="animSpeed" min="100" max="2000" value="500" oninput="updateSpeed(this.value)">
+                    <span class="range-value" id="speedDisplay">500</span>
+                </div>
+
+                <button class="button button-primary" onclick="generateRandomPoints()">
+                    🎲 ایجاد نقاط تصادفی
+                </button>
+
+                <button class="button button-success" onclick="initializeCentroids()">
+                    ⭐ مقداردهی اولیه مراکز
+                </button>
+
+                <button class="button button-warning" onclick="runKMeans()">
+                    ▶️ اجرای الگوریتم
+                </button>
+
+                <button class="button button-secondary" onclick="reset()">
+                    🔄 پاک‌سازی
+                </button>
+
+                <div class="convergence-indicator" id="convergenceStatus">
+                    آماده شروع
+                </div>
+
+                <div class="stats">
+                    <h3>📊 آمار</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">تعداد نقاط:</span>
+                        <span class="stat-value" id="pointCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">تعداد مراکز:</span>
+                        <span class="stat-value" id="centroidCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">تکرار فعلی:</span>
+                        <span class="stat-value" id="iterationCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">تعداد کل تکرارها:</span>
+                        <span class="stat-value" id="totalIterations">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="canvas" width="800" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
