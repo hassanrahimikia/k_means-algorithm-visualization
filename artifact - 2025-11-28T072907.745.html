@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الگوریتم K-Means - نمایش بصری</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            height: fit-content;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .control-group input[type="number"],
+        .control-group input[type="range"],
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .control-group input[type="number"]:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .control-group input[type="range"] {
+            padding: 0;
+            height: 8px;
+            cursor: pointer;
+        }
+
+        .range-value {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .button-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .button-secondary:hover {
+            background: #5a6268;
+        }
+
+        .button-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .button-success:hover {
+            background: #218838;
+        }
+
+        .button-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .button-warning:hover {
+            background: #e0a800;
+        }
+
+        .canvas-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: crosshair;
+            display: block;
+            width: 100%;
+        }
+
+        .stats {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stats h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-right: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            color: #0c5460;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .convergence-indicator {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .convergence-indicator.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .convergence-indicator.converged {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .running {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 الگوریتم K-Means</h1>
+            <p>نمایش بصری و تعاملی خوشه‌بندی داده‌ها</p>
+        </div>
+
+        <div class="content">
+            <div class="controls">
+                <div class="info-box">
+                    <p>برای افزودن نقطه روی بوم کلیک کنید یا از دکمه‌های زیر استفاده نمایید.</p>
+                </div>
+
+                <div class="control-group">
+                    <label>تعداد خوشه‌ها (K):</label>
+                    <input type="range" id="kValue" min="2" max="10" value="3" oninput="updateKValue(this.value)">
+                    <span class="range-value" id="kDisplay">3</span>
+                </div>
+
+                <div class="control-group">
+                    <label>تعداد نمونه‌های تصادفی:</label>
+                    <input type="number" id="sampleCount" min="10" max="500" value="150">
+                </div>
+
+                <div class="control-group">
+                    <label>الگوی پراکندگی:</label>
+                    <select id="distributionPattern">
+                        <option value="scattered">پراکنده در سراسر صفحه</option>
+                        <option value="gaussian">خوشه‌های گوسی</option>
+                        <option value="circular">دایره‌ای</option>
+                        <option value="grid">شبکه‌ای</option>
+                        <option value="random">کاملاً تصادفی</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>میزان پراکندگی:</label>
+                    <input type="range" id="spreadAmount" min="50" max="300" value="150" oninput="updateSpread(this.value)">
+                    <span class="range-value" id="spreadDisplay">150</span>
+                </div>
+
+                <div class="control-group">
+                    <label>سرعت انیمیشن (ms):</label>
+                    <input type="range" id="animSpeed" min="100" max="2000" value="500" oninput="updateSpeed(this.value)">
+                    <span class="range-value" id="speedDisplay">500</span>
+                </div>
+
+                <button class="button button-primary" onclick="generateRandomPoints()">
+                    🎲 ایجاد نقاط تصادفی
+                </button>
+
+                <button class="button button-success" onclick="initializeCentroids()">
+                    ⭐ مقداردهی اولیه مراکز
+                </button>
+
+                <button class="button button-warning" onclick="runKMeans()">
+                    ▶️ اجرای الگوریتم
+                </button>
+
+                <button class="button button-secondary" onclick="reset()">
+                    🔄 پاک‌سازی
+                </button>
+
+                <div class="convergence-indicator" id="convergenceStatus">
+                    آماده شروع
+                </div>
+
+                <div class="stats">
+                    <h3>📊 آمار</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">تعداد نقاط:</span>
+                        <span class="stat-value" id="pointCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">تعداد مراکز:</span>
+                        <span class="stat-value" id="centroidCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">تکرار فعلی:</span>
+                        <span class="stat-value" id="iterationCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">تعداد کل تکرارها:</span>
+                        <span class="stat-value" id="totalIterations">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="canvas" width="800" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let points = [];
+        let centroids = [];
+        let k = 3;
+        let isRunning = false;
+        let animationSpeed = 500;
+        let currentIteration = 0;
+        let totalIterations = 0;
+        let spreadAmount = 150;
+
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+            '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52B788'
+        ];
+
+        function updateKValue(value) {
+            k = parseInt(value);
+            document.getElementById('kDisplay').textContent = value;
+        }
+
+        function updateSpeed(value) {
+            animationSpeed = parseInt(value);
+            document.getElementById('speedDisplay').textContent = value + ' ms';
+        }
+
+        function updateSpread(value) {
+            spreadAmount = parseInt(value);
+            document.getElementById('spreadDisplay').textContent = value;
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            points.push({ x, y, cluster: -1 });
+            updateStats();
+            draw();
+        });
+
+        function generateRandomPoints() {
+            const count = parseInt(document.getElementById('sampleCount').value);
+            const pattern = document.getElementById('distributionPattern').value;
+            points = [];
+            
+            switch(pattern) {
+                case 'scattered':
+                    generateScatteredPoints(count);
+                    break;
+                case 'gaussian':
+                    generateGaussianClusters(count);
+                    break;
+                case 'circular':
+                    generateCircularPattern(count);
+                    break;
+                case 'grid':
+                    generateGridPattern(count);
+                    break;
+                case 'random':
+                    generateCompletelyRandom(count);
+                    break;
+            }
+            
+            centroids = [];
+            currentIteration = 0;
+            updateStats();
+            draw();
+        }
+
+        function generateScatteredPoints(count) {
+            // پراکندگی در سراسر صفحه با تراکم متغیر
+            const margin = 30;
+            for (let i = 0; i < count; i++) {
+                const x = Math.random() * (canvas.width - 2 * margin) + margin;
+                const y = Math.random() * (canvas.height - 2 * margin) + margin;
+                points.push({ x, y, cluster: -1 });
+            }
+        }
+
+        function generateGaussianClusters(count) {
+            // ایجاد خوشه‌های گوسی با پراکندگی قابل تنظیم
+            const numClusters = Math.max(3, Math.floor(k * 1.5));
+            const pointsPerCluster = Math.floor(count / numClusters);
+            
+            for (let i = 0; i < numClusters; i++) {
+                const centerX = Math.random() * (canvas.width - 200) + 100;
+                const centerY = Math.random() * (canvas.height - 200) + 100;
+                
+                for (let j = 0; j < pointsPerCluster; j++) {
+                    // توزیع نرمال (Box-Muller transform)
+                    const u1 = Math.random();
+                    const u2 = Math.random();
+                    const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                    const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
+                    
+                    const x = centerX + z0 * spreadAmount;
+                    const y = centerY + z1 * spreadAmount;
+                    
+                    if (x >= 10 && x <= canvas.width - 10 && y >= 10 && y <= canvas.height - 10) {
+                        points.push({ x, y, cluster: -1 });
+                    }
+                }
+            }
+        }
+
+        function generateCircularPattern(count) {
+            // الگوی دایره‌ای با حلقه‌های متعدد
+            const numRings = Math.max(2, Math.floor(k / 2));
+            const pointsPerRing = Math.floor(count / numRings);
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            for (let ring = 0; ring < numRings; ring++) {
+                const radius = (ring + 1) * (Math.min(canvas.width, canvas.height) / (numRings * 2.5));
+                
+                for (let i = 0; i < pointsPerRing; i++) {
+                    const angle = (i / pointsPerRing) * 2 * Math.PI;
+                    const noise = (Math.random() - 0.5) * spreadAmount * 0.5;
+                    const r = radius + noise;
+                    
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    
+                    if (x >= 10 && x <= canvas.width - 10 && y >= 10 && y <= canvas.height - 10) {
+                        points.push({ x, y, cluster: -1 });
+                    }
+                }
+            }
+        }
+
+        function generateGridPattern(count) {
+            // الگوی شبکه‌ای با نویز
+            const cols = Math.ceil(Math.sqrt(count * (canvas.width / canvas.height)));
+            const rows = Math.ceil(count / cols);
+            const spacingX = (canvas.width - 60) / cols;
+            const spacingY = (canvas.height - 60) / rows;
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (points.length >= count) break;
+                    
+                    const baseX = 30 + j * spacingX;
+                    const baseY = 30 + i * spacingY;
+                    
+                    const noiseX = (Math.random() - 0.5) * spreadAmount;
+                    const noiseY = (Math.random() - 0.5) * spreadAmount;
+                    
+                    const x = baseX + noiseX;
+                    const y = baseY + noiseY;
+                    
+                    if (x >= 10 && x <= canvas.width - 10 && y >= 10 && y <= canvas.height - 10) {
+                        points.push({ x, y, cluster: -1 });
+                    }
+                }
+            }
+        }
+
+        function generateCompletelyRandom(count) {
+            // کاملاً تصادفی در سراسر صفحه
+            for (let i = 0; i < count; i++) {
+                const x = Math.random() * (canvas.width - 40) + 20;
+                const y = Math.random() * (canvas.height - 40) + 20;
+                points.push({ x, y, cluster: -1 });
+            }
+        }
+
+        function initializeCentroids() {
+            if (points.length === 0) {
+                alert('ابتدا نقاط را ایجاد کنید!');
+                return;
+            }
+
+            centroids = [];
+            // استفاده از روش K-Means++
+            const firstIndex = Math.floor(Math.random() * points.length);
+            centroids.push({ ...points[firstIndex] });
+
+            for (let i = 1; i < k; i++) {
+                let distances = [];
+                let totalDist = 0;
+
+                for (let point of points) {
+                    let minDistToCentroid = Infinity;
+                    for (let centroid of centroids) {
+                        const dist = distance(point, centroid);
+                        minDistToCentroid = Math.min(minDistToCentroid, dist);
+                    }
+                    distances.push(minDistToCentroid * minDistToCentroid);
+                    totalDist += minDistToCentroid * minDistToCentroid;
+                }
+
+                // انتخاب تصادفی با احتمال متناسب با مربع فاصله
+                let randVal = Math.random() * totalDist;
+                let cumSum = 0;
+                for (let j = 0; j < points.length; j++) {
+                    cumSum += distances[j];
+                    if (cumSum >= randVal) {
+                        centroids.push({ ...points[j] });
+                        break;
+                    }
+                }
+            }
+
+            currentIteration = 0;
+            updateStats();
+            draw();
+        }
+
+        function distance(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+
+        function assignClusters() {
+            let changed = false;
+            for (let point of points) {
+                let minDist = Infinity;
+                let closestCluster = -1;
+
+                for (let i = 0; i < centroids.length; i++) {
+                    const dist = distance(point, centroids[i]);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestCluster = i;
+                    }
+                }
+
+                if (point.cluster !== closestCluster) {
+                    changed = true;
+                    point.cluster = closestCluster;
+                }
+            }
+            return changed;
+        }
+
+        function updateCentroids() {
+            const newCentroids = [];
+            
+            for (let i = 0; i < k; i++) {
+                const clusterPoints = points.filter(p => p.cluster === i);
+                
+                if (clusterPoints.length > 0) {
+                    const sumX = clusterPoints.reduce((sum, p) => sum + p.x, 0);
+                    const sumY = clusterPoints.reduce((sum, p) => sum + p.y, 0);
+                    newCentroids.push({
+                        x: sumX / clusterPoints.length,
+                        y: sumY / clusterPoints.length
+                    });
+                } else {
+                    newCentroids.push({ ...centroids[i] });
+                }
+            }
+            
+            centroids = newCentroids;
+        }
+
+        async function runKMeans() {
+            if (centroids.length === 0) {
+                alert('ابتدا مراکز را مقداردهی کنید!');
+                return;
+            }
+
+            if (isRunning) return;
+            isRunning = true;
+            currentIteration = 0;
+            
+            const statusEl = document.getElementById('convergenceStatus');
+            statusEl.className = 'convergence-indicator running';
+            statusEl.textContent = '🔄 در حال اجرا...';
+
+            let maxIterations = 100;
+            let iteration = 0;
+
+            while (iteration < maxIterations) {
+                const changed = assignClusters();
+                currentIteration = iteration + 1;
+                draw();
+                updateStats();
+                
+                await sleep(animationSpeed);
+                
+                if (!changed) {
+                    statusEl.className = 'convergence-indicator converged';
+                    statusEl.textContent = '✅ همگرا شد!';
+                    totalIterations = iteration + 1;
+                    break;
+                }
+                
+                updateCentroids();
+                iteration++;
+                
+                if (iteration === maxIterations) {
+                    statusEl.className = 'convergence-indicator converged';
+                    statusEl.textContent = '⚠️ به حداکثر تکرار رسید';
+                    totalIterations = iteration;
+                }
+            }
+
+            isRunning = false;
+            updateStats();
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // رسم خطوط اتصال نقاط به مراکز
+            ctx.globalAlpha = 0.15;
+            for (let point of points) {
+                if (point.cluster !== -1 && centroids[point.cluster]) {
+                    ctx.strokeStyle = colors[point.cluster % colors.length];
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(point.x, point.y);
+                    ctx.lineTo(centroids[point.cluster].x, centroids[point.cluster].y);
+                    ctx.stroke();
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            // رسم نقاط
+            for (let point of points) {
+                ctx.fillStyle = point.cluster === -1 ? '#999' : colors[point.cluster % colors.length];
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // رسم مراکز
+            for (let i = 0; i < centroids.length; i++) {
+                const centroid = centroids[i];
+                
+                // سایه
+                ctx.shadowColor = colors[i % colors.length];
+                ctx.shadowBlur = 15;
+                
+                // دایره بزرگ
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.beginPath();
+                ctx.arc(centroid.x, centroid.y, 12, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                
+                // حاشیه سفید
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // ستاره وسط
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('★', centroid.x, centroid.y);
+            }
+        }
+
+        function reset() {
+            points = [];
+            centroids = [];
+            currentIteration = 0;
+            totalIterations = 0;
+            isRunning = false;
+            
+            const statusEl = document.getElementById('convergenceStatus');
+            statusEl.className = 'convergence-indicator';
+            statusEl.textContent = 'آماده شروع';
+            
+            updateStats();
+            draw();
+        }
+
+        function updateStats() {
+            document.getElementById('pointCount').textContent = points.length;
+            document.getElementById('centroidCount').textContent = centroids.length;
+            document.getElementById('iterationCount').textContent = currentIteration;
+            document.getElementById('totalIterations').textContent = totalIterations;
+        }
+
+        // مقداردهی اولیه
+        updateStats();
+        draw();
+    </script>
+</body>
+</html>
